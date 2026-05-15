@@ -42,7 +42,7 @@ class Client():
 
     def connect(self,addr):
         async def _run(addr):
-            async with websockets.connect('ws://localhost:3000') as websc:
+            async with websockets.connect(f'ws://{addr[0]}:{addr[1]}') as websc:
                 self.websc = websc
                 await self.mainFunc()
 
