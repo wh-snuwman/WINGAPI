@@ -1,9 +1,25 @@
 import websockets
 import asyncio
 import json
-from .colorString import colorString
-# from .log.log import LogSet
+import time
+from .ColorString import ColorString as CorlStr
 from .Log import Warn,Info,Error
+from copy import deepcopy
+from .NewId import NewId
+
+
+BASIC_RIGHT = ['visitor'] # 처음접속시 기본적으로 지급하는 역할
+CLIENTS = {} # 현재 접속해있는 클라이언트 목록
+
+
+class ClientObj():
+    def __init__(self):
+        self.connectTime = time.time()
+        self.ip : str
+        self.id = NewId()
+        self.right = deepcopy(BASIC_RIGHT)
+        self.role : str
+
 
 
 
@@ -16,7 +32,7 @@ class Server():
         self.clientIP = ws.remote_address[0]
         if self.clientIP == '::1': self.clientIP = 'localhost'
 
-        self.log.INFO(f"접속: {self.clientIP}")
+        Info(f"접속: {self.clientIP}")
         async for message in ws:  
             msg_locads = json.loads(message)
             TYPE = msg_locads['code']
@@ -47,12 +63,13 @@ class Server():
             addr[1],
             compression=None
             ):
-                self.log.INFO(f"{colorString('paper server started on',(50,255,50))} {colorString(f'ws://{addr[0]}:{addr[1]}',(252,70,140))}")
+                Info(f"{CorlStr('paper server started on',(50,255,50))} {CorlStr(f'ws://{addr[0]}:{addr[1]}',(252,70,140))}")
                 await asyncio.Event().wait()
                 await asyncio.Future()
 
         try:
             asyncio.run(opener(addr))
         except KeyboardInterrupt:
-            self.log.ERROR("키보드 인터럽트 서버 강제종료")
+            Error("키보드 인터럽트 서버 강제종료")
 
+    

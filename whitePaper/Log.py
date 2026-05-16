@@ -1,4 +1,4 @@
-from .log.log import LogSet
+from .log.Log import LogSet
 
 _Log = LogSet()
 

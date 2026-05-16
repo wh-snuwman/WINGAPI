@@ -1,6 +1,5 @@
 from datetime import datetime
-from .colorString import colorString
-
+from .ColorString import ColorString
 
 class LogSet():
     def __init__(self):
@@ -17,21 +16,21 @@ class LogSet():
         return f'[{type}][{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}'
 
     def Log(self,type='NONE',msg='null'):
-        text = colorString(self._formSet("INFO",msg),self._formSet(type))
+        text = ColorString(self._formSet("INFO",msg),self._formSet(type))
         print(text)
         return text
 
     def INFO(self,msg='null'):
-        text = colorString(self._formSet("INFO",msg),self.defineType["INFO"])
+        text = ColorString(self._formSet("INFO",msg),self.defineType["INFO"])
         print(text)
         return text
 
     def WARN(self,msg='null'):
-        text = colorString(self._formSet("WARN",msg),self.defineType["WARN"])
+        text = ColorString(self._formSet("WARN",msg),self.defineType["WARN"])
         print(text)
         return text
     
     def ERROR(self,msg='null'):
-        text = colorString(self._formSet("ERROR",msg),self.defineType["ERROR"])
+        text = ColorString(self._formSet("ERROR",msg),self.defineType["ERROR"])
         print(text)
         return text

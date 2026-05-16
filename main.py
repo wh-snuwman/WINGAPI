@@ -1,14 +1,13 @@
 import whitePaper as wp
-from whitePaper.server import colorString
+from whitePaper.Server import CorlStr
 
 ADDR = ('localhost',3000)
 server = wp.Server()
-# wp.Warn
-wp.Log.Info()
+
 
 @server.recv('ping')
 def test(websc,message:str):
-    wp.Server.INFO(colorString(message,(255,255,0)))
+    wp.Log.Info(CorlStr(message,(255,255,0)))
 
 
 

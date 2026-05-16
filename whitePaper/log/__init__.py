@@ -1,1 +1,1 @@
-from .log import LogSet
+from .Log import LogSet
