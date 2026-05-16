@@ -1,13 +1,14 @@
 import whitePaper as wp
 from whitePaper.Server import CorlStr
 
-ADDR = ('localhost',3000)
+ADDR = ('localhost',1270)
 server = wp.Server()
 
 
 @server.recv('ping')
-def test(websc,message:str):
-    wp.Log.Info(CorlStr(message,(255,255,0)))
+async def ping(obj:wp.ClientObj,code:str, data: dict):
+    wp.Log.Info(CorlStr(f"{code,data}",(255,255,0)))
+    await obj.send(200,{"msg":'pong'})
 
 
 
