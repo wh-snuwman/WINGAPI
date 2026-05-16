@@ -34,7 +34,7 @@ export class wingAPI {
         await this.openPromise
     }
 
-    disconnect(){
+    disconnect(){s
         if (this.websc && this.websc.readyState == WebSocket.OPEN){
             this.log.Info('접속종료 요첨됨..')
             this.isManualClose = true;
@@ -83,14 +83,26 @@ export class wingAPI {
         if (this.recvFn){
             if (this._isSysMsg(CODE)){
                 const CODE_SYS = this._SysMsgEdit(CODE)
+
+
                 if (CODE_SYS == 'signup'){
                     if (DATA.signup){
                         this.log.Info("가입완료. 로그인 가능")
                     } else {
                         this.log.Info("가입실패. 비밀번호가 너무 짧거나(4글자 미만) 중복닉네임 입니다.")
                     }
+
+                } else if (CODE_SYS == 'login'){
+                    if (DATA.login){
+                        this.log.Info("로그인완료:" + DATA.nickname)
+                    } else {
+                        this.log.Info("로그인 실패. 계정이 없거나 비밀번호가 틀려렸습니다.")
+                    }
                 }
+
                 return true;
+
+
             }
             this.recvFn({code:CODE,data:DATA})
         }
@@ -107,15 +119,14 @@ export class wingAPI {
 
     }
 
-    async signin(nick,pw){
-        if(!(this.websc && this.websc.readyState === WebSocket.OPEN)) return false;
-        this.send('wing:signin',{'nickname':nick,'password':pw})
-    }
-
     async signup(nick,pw){
         if(!(this.websc && this.websc.readyState === WebSocket.OPEN)) return false;
         this.send('wing:signup',{'nickname':nick,'password':pw})
     }
 
+    async login(nick,pw){
+        if(!(this.websc && this.websc.readyState === WebSocket.OPEN)) return false;
+        this.send('wing:login',{'nickname':nick,'password':pw})
+    }
 
 }
