@@ -6,10 +6,10 @@ import {wingAPI} from ".././wingAPI/src/script/wingAPI.JS"
 
 
     // wing.send('ping',{'msg':'Hello wingAPI!'})
-
-    wing.signup('Mrhello','1234')
+    const n = Math.floor(Date.now())
     
-    wing.login('Mrhello','1234')
+    wing.signup(`USER:${n}`,'1234')
+    wing.login(`USER:${n}`,'1234')    
 
     wing.recv((data)=>{
     })
