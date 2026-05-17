@@ -1,5 +1,5 @@
-import whitePaper as wp
-from whitePaper.Server import CorlStr
+import wingAPI as wp
+from wingAPI.Server import CorlStr
 
 ADDR = ('localhost',1270)
 server = wp.Server()

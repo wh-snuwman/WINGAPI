@@ -1,71 +1,16 @@
 import websockets
 import asyncio
 import json
-import time
 from .ColorString import ColorString as CorlStr
 from .Log import Warn,Info,Error
-from copy import deepcopy
 from .NewId import NewId
+from .Obj.UserObj import UserObj
 
 BASIC_RIGHT = ['visitor'] # 처음접속시 기본적으로 지급하는 역할
 CLIENTS = {} # 현재 접속해있는 클라이언트 목록
 USERS = {} # 저장된 유저 데이터. 데이터베이스와 주기적으로 동기화됨 
 NICKNAMES = []
 
-class ClientObj():
-    def __init__(self,websc:websockets.ServerConnection):
-        self.connectTime = time.time()
-        self.address = websc.remote_address
-        self.websc = websc
-        self.id = NewId()
-        self.loginUser = None
-        self.sendReserve = []
-
-    def addressGet(self):
-        addr = list(self.address)
-        if self.address[0] == '::1': addr[0] = 'localhost'
-        return addr
-
-    async def send(self,code: str | int, data:dict):
-        if code == None or data == None:
-            raise Exception("WhitePaper: 코드혹은 데이터가 없습니다")
-        self.sendReserve.append(json.dumps({'code':code,'data':data}))
-        return True
-
-    async def _send_(self):
-        for i in self.sendReserve:
-            await self.websc.send(i)
-        self.sendReserve = []
-
-
-class UserObj():
-    def __init__(self,nickname,password):
-        self.nickname = nickname
-        self.password = password
-        self.tag = []
-        self.role : str
-        self.right : set
-        self.id = NewId()
-    def nickname_get(self):
-        return self.nickname
-
-    def password_get(self):
-        return self.password
-
-    def giveRight(self,r):
-        self.right.add(r)
-
-    def depriveRight(self,r):
-        self.right.remove(r)
-
-    def setRole(self,r):
-        self.role = r
-
-    def role_get(self,r):
-        self.role = r
-
-    def right_get(self):
-        return self.right
 
 
 class Server():
