@@ -10,7 +10,7 @@ from .Obj.ClientObj import ClientObj
 from .ReservedWord import RESERVED_WORD
 Info(f'모든 모듈로드 성공!')
 
-BASIC_RIGHT = ['visitor'] # 처음접속시 기본적으로 지급하는 역할
+# BASIC_RIGHT = ['visitor'] # 처음접속시 기본적으로 지급하는 역할
 USERS = {} # 저장된 유저 데이터. 데이터베이스와 주기적으로 동기화됨 
 CLIENTS = {} # 현재 접속해있는 클라이언트 목록
 
@@ -45,15 +45,25 @@ class Server():
         return msg[5:]
     
 
-    def _newUser(self,nick,pw):
+    def _newUser(self,nick,pw,obj):
         id = NewId()
-        USERS[id] = UserObj(nick,pw,id)
+        USERS[id] = UserObj(nick,pw,id,obj)
         Info(f'새로운 유저: {CorlStr('NEW!',(241, 222, 50))} {CorlStr(nick,(54, 155, 255))}')
         return id
 
 
+    def _rmClient(websc,id):
+        CLIENTS.pop(id)
+
+    def _addClient(self,websc):
+        id = NewId()
+        _obj = ClientObj(websc,id)
+        CLIENTS[id] = _obj
+        return _obj,id
+
     async def handler(self,websc):
-        obj = ClientObj(websc)
+        obj,objId= self._addClient(websc)
+        obj : ClientObj
         uobj : UserObj
         address = obj.addressGet()
 
@@ -74,7 +84,7 @@ class Server():
                     elif len(PASSWORD) < 4:
                         await obj.send(code='wing:signup',data={'state':'shortPassword','signup':False})
                     else:
-                        id = self._newUser(NICKNAME,PASSWORD)
+                        id = self._newUser(NICKNAME,PASSWORD,obj)
                         await obj.send(code='wing:signup',data={'state':'sueccess','signup':True,'nickname':NICKNAME})
 
                 if CODE == 'login':
@@ -106,6 +116,7 @@ class Server():
             Info(f'유저가 로그아웃했습니다 (접속종료) nickname:{uobj.nickname}')
 
         Info(f'클라이언트 접속종료 | IP: {CorlStr(address[0],(252,70,140))} | ID: {obj.getId()}')
+        self._rmClient(objId)
 
 
     def recv(self, _msg=None):
@@ -127,8 +138,43 @@ class Server():
         await asyncio.sleep(time)
 
 
+    def allUser(self):
+        return USERS
+
+
     def getLock(self):
         return self.Lock
+
+    
+    def broadcastClient(self,code=str,data={}) -> list:
+        arr = []
+        for _id,obj in CLIENTS.items():
+            obj:ClientObj
+            obj.send(code,data)
+            obj._send_()
+            arr.append(_id)
+        return arr
+
+
+    def broadcastUser(self,who=dict,code=str,data={}):
+        arr = []
+        for _id,uobj in who.items():
+            uobj:UserObj
+            obj = uobj.getConnectClient()
+            obj:ClientObj
+            obj.send(code,data)
+            obj._send_()
+            arr.append(_id)
+        return arr
+
+    def roleFilterUser(self,role):
+        return [uobj for uobj in USERS if role in uobj.getRole()]
+
+    def rightFilterUser(self,right):
+        return [uobj for uobj in USERS if right in uobj.getRight()]
+
+    def tagFilterUser(self,tag):
+        return [uobj for uobj in USERS if tag in uobj.getTag()]
 
 
     def open(self,addr):

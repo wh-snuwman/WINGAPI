@@ -1,12 +1,13 @@
 from ..NewId import NewId
 
 class UserObj():
-    def __init__(self,nickname,password,id=None):
+    def __init__(self,nickname,password,id=None,ClientObj=None):
         self.nickname = nickname
         self.password = password
+        self.ClientObj = ClientObj
         self.tag = []
-        self.role : str
-        self.right : set
+        self.role = 'visitor'
+        self.right:set = {}
         self.id = id
         if self.id == None: self.id = NewId()
         self.isLogin = False
@@ -22,7 +23,9 @@ class UserObj():
     def getPassword(self):return self.password
     def getRight(self):return self.right
     def getRole(self):return self.role
+    def getTag(self):return self.tag
     def getIsLogin(self):return self.isLogin
+    def getConnectClient(self):return self.ClientObj
 
 
 

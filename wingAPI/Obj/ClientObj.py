@@ -5,11 +5,12 @@ import json
 from ..ReservedWord import RESERVED_WORD
 
 class ClientObj():
-    def __init__(self,websc:websockets.ServerConnection):
+    def __init__(self,websc:websockets.ServerConnection,id=None):
         self.connectTime = time.time()
         self.address = websc.remote_address
         self.websc = websc
-        self.id = NewId()
+        self.id = id
+        if self.id == None: self.id = NewId()
         self.loginUser = None
         self.sendReserve = []
     def getId(self):return self.id

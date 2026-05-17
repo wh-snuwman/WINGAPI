@@ -10,6 +10,8 @@ async def ping(obj:wp.ClientObj,code:str, data: dict):
     wp.Log.Info(CorlStr(f"{code,data}",(255,255,0)))
     await obj.send(200,{"msg":'pong'})
 
+    await server.broadcastUser(server.allUser(),)
+
 
 @server.core()
 async def core_func():
@@ -17,7 +19,9 @@ async def core_func():
     print('hello python!')
     print('hello wingAPI!')
 
+    print(server.rightFilterUser('ingame'))
+
 
 if __name__ == '__main__':
     server.open(ADDR)
-    Lock = server.lock
+    Lock = server.getLock()
