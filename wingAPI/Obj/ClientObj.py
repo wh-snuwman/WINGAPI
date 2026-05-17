@@ -1,6 +1,8 @@
 import websockets
 from ..NewId import NewId
 import time
+import json
+from ..ReservedWord import RESERVED_WORD
 
 class ClientObj():
     def __init__(self,websc:websockets.ServerConnection):
@@ -10,6 +12,8 @@ class ClientObj():
         self.id = NewId()
         self.loginUser = None
         self.sendReserve = []
+    def getId(self):return self.id
+
 
     def addressGet(self):
         addr = list(self.address)
@@ -19,7 +23,10 @@ class ClientObj():
     async def send(self,code: str | int, data:dict):
         if code == None or data == None:
             raise Exception("WhitePaper: 코드혹은 데이터가 없습니다")
-        self.sendReserve.append(json.dumps({'code':code,'data':data}))
+        self.sendReserve.append(json.dumps({
+            RESERVED_WORD[0]:code,
+            RESERVED_WORD[1]:data
+        }))
         return True
 
     async def _send_(self):

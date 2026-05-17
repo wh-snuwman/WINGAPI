@@ -1,7 +1,7 @@
 import wingAPI as wp
 from wingAPI.Server import CorlStr
 
-ADDR = ('localhost',1270)
+ADDR = ('localhost',33027)
 server = wp.Server()
 
 
@@ -11,7 +11,13 @@ async def ping(obj:wp.ClientObj,code:str, data: dict):
     await obj.send(200,{"msg":'pong'})
 
 
+@server.core()
+async def core_func():
+    await server.sleep(0.2)
+    print('hello python!')
+    print('hello wingAPI!')
 
 
 if __name__ == '__main__':
     server.open(ADDR)
+    Lock = server.lock
