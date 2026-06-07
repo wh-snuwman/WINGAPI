@@ -8,28 +8,39 @@ from .NewId import NewId
 from .Obj.UserObj import UserObj
 from .Obj.ClientObj import ClientObj
 from .ReservedWord import RESERVED_WORD
+import traceback 
 Info(f'모든 모듈로드 성공!')
 
-# BASIC_RIGHT = ['visitor'] # 처음접속시 기본적으로 지급하는 역할
 USERS = {} # 저장된 유저 데이터. 데이터베이스와 주기적으로 동기화됨 
 CLIENTS = {} # 현재 접속해있는 클라이언트 목록
+
 
 class Server():
     def __init__(self):
         self.addr = None
         self.handlers = {}
         self.core_func = None
+        self.error_count = 0 # 에러가 발생한 횟수. 특정 횟수 이상이면 서버 강제 리부팅 
+
+        async def temp(): 
+            Error(traceback.format_exc())
+            self.error_count += 1
+        self.end_func = temp
+        self.error_func = None
+        self.login_func = None
         self.Lock = None
 
 
-    def _getUser(self,infoType='id',info = str):
+    def getUser(self,infoType='id',info = str) -> UserObj:
         if infoType == 'id':
             return USERS[info]
-        if infoType == 'nick':
+        elif infoType == 'nick':
             for userObj in list(USERS.values()):
                 if userObj.nickname == info: 
                     return userObj
-        raise Exception("잘못된 인자값")
+                
+        else:
+            raise Exception("잘못된 인자값")
 
 
     def _getAllUser(self,type='id'):
@@ -46,78 +57,121 @@ class Server():
     
 
     def _newUser(self,nick,pw,obj):
-        id = NewId()
+        id = f'USER{NewId()}'
         USERS[id] = UserObj(nick,pw,id,obj)
         Info(f'새로운 유저: {CorlStr('NEW!',(241, 222, 50))} {CorlStr(nick,(54, 155, 255))}')
         return id
 
 
-    def _rmClient(websc,id):
-        CLIENTS.pop(id)
+    def _rmClient(self,id):
+        if id in list(CLIENTS.keys()):
+            del CLIENTS[id]
+        else:
+            Error('클라이언트가 없습니다.')
+            self.error_count += 1
+
 
     def _addClient(self,websc):
-        id = NewId()
+        id = f'CLIENT{NewId()}'
         _obj = ClientObj(websc,id)
         CLIENTS[id] = _obj
         return _obj,id
 
-    async def handler(self,websc):
-        obj,objId= self._addClient(websc)
-        obj : ClientObj
-        uobj : UserObj
+    
+    async def handler(self, websc):
+        obj, objId = self._addClient(websc)
+        obj: ClientObj
+        uobj: UserObj = None
         address = obj.addressGet()
-
         Info(f'클라이언트 접속 | IP: {CorlStr(address[0],(252,70,140))} | ID: {obj.getId()}')
+        
+        try:
+            async for data in websc:  
+                msgLoads = json.loads(data)
+                CODE = msgLoads[RESERVED_WORD[0]]
+                DATA = msgLoads[RESERVED_WORD[1]]
 
-        async for data in websc:  
-            msgLoads = json.loads(data)
-            CODE = msgLoads[RESERVED_WORD[0]]
-            DATA = msgLoads[RESERVED_WORD[1]]
-            if self._isSysMsg(CODE):
-                CODE = self._editSysMsg(CODE)
-                if CODE == 'signup':
-                    NICKNAME = DATA['nickname']
-                    PASSWORD = DATA['password']
+                if self._isSysMsg(CODE):
+                    CODE = self._editSysMsg(CODE)
+                    if CODE == 'signup':
+                        NICKNAME = str(DATA['nickname'])
+                        PASSWORD = str(DATA['password'])
 
-                    if NICKNAME in self._getAllUser('nick'):
-                        await obj.send(code='wing:signup',data={'state':'repeatNickname','signup':False})
-                    elif len(PASSWORD) < 4:
-                        await obj.send(code='wing:signup',data={'state':'shortPassword','signup':False})
-                    else:
-                        id = self._newUser(NICKNAME,PASSWORD,obj)
-                        await obj.send(code='wing:signup',data={'state':'sueccess','signup':True,'nickname':NICKNAME})
-
-                if CODE == 'login':
-                    NICKNAME = DATA['nickname']
-                    PASSWORD = DATA['password']
-                    if NICKNAME in self._getAllUser('nick'):
-                        uobj = self._getUser('nick',NICKNAME) 
-
-                        if uobj.getPassword() != PASSWORD:
-                            await obj.send(code='wing:login',data={'state':'passwordWorng','login':False})
-                            
+                        if NICKNAME in self._getAllUser('nick'):
+                            obj.send(code='wing:signup', data={'state':'repeatNickname','signup':False})
+                        elif len(PASSWORD) < 4:
+                            obj.send(code='wing:signup', data={'state':'shortPassword','signup':False})
                         else:
-                            Info(f'유저 로그인: {CorlStr(NICKNAME,((54, 155, 255)))}')
-                            uobj.changeIsLogin(True)
-                            await obj.send(code='wing:login',data={'state':'sueccess','login':True,'nickname':NICKNAME})
+                            _id = self._newUser(NICKNAME, PASSWORD, obj)
+                            obj.connectUser(_id)
+                            
+                            obj.send(code='wing:signup', data={'state':'sueccess','signup':True,'nickname':NICKNAME})
 
-                    else:
-                        await obj.send(code='wing:login',data={'state':'noAccount','login':False})
+                    if CODE == 'login':
+                        NICKNAME = str(DATA['nickname'])
+                        PASSWORD = str(DATA['password'])
+
+                        if NICKNAME in self._getAllUser('nick'):
+
+                            uobj = self.getUser('nick', NICKNAME) 
+
+                            if uobj.getPassword() != PASSWORD:
+                                obj.send(code='wing:login', data={'state':'passwordWorng','login':False})
+                            else:
+                                Info(f'유저 로그인: {CorlStr(NICKNAME,((54, 155, 255)))}')
+
+                                uobj.changeIsLogin(True)
+                                await self.login_func(obj,self.getUser('nick',NICKNAME))
+
+                                obj.send(code='wing:login', data={'state':'sueccess','login':True,'nickname':NICKNAME})
+                        else:
+                            obj.send(code='wing:login', data={'state':'noAccount','login':False})
+
+                    await obj._send_()
+                    continue
+                
+                else:
+                    if CODE in list(self.handlers.keys()):
+                        await self.handlers[CODE](obj, DATA)
 
                 await obj._send_()
-                continue
+                
+            await self.end_func(obj)
 
-            if CODE in list(self.handlers.keys()):
-                await self.handlers[CODE](obj,CODE,DATA)
-            await obj._send_()
-            
-        if uobj.getIsLogin():
+        except Exception as e:
+            Info(f"클라이언트 연결이 비정상적으로 끊어졌습니다. ID: {obj.getId()}")
+            await self.error_func(obj,e)
+            self._optimizationClient()
+
+
+
+        # finally:
+        if uobj and uobj.getIsLogin():
             uobj.changeIsLogin(False)
-            Info(f'유저가 로그아웃했습니다 (접속종료) nickname:{uobj.nickname}')
+            Info(f'유저가 로그아웃했습니다. 닉네임: {uobj.nickname}')
+            uobj.changeConnectClient(None)
+            uobj.ClientObj = None
+            uobj.isLogin = False
+            uobj.right = []
+            uobj.tag = []
+
 
         Info(f'클라이언트 접속종료 | IP: {CorlStr(address[0],(252,70,140))} | ID: {obj.getId()}')
-        self._rmClient(objId)
+        self._rmClient(obj.getId())
 
+    # def close(self,id):
+    #     if id in list(CLIENTS.keys()):
+    #         del CLIENTS[id]
+    #     else:
+    #         Error('클라이언트가 없습니다.')
+    #         self.error_count += 1
+
+    def newlogin(self):
+        def decorator(func):
+            self.login_func = func
+            return func
+        return decorator 
+    
 
     def recv(self, _msg=None):
         def decorator(func):
@@ -132,7 +186,21 @@ class Server():
             self.core_func = func
             return func
         return decorator 
+    
 
+    def error(self):
+        def decorator(func):
+            self.error_func = func
+            return func
+        return decorator 
+    
+
+    def end(self):
+        def decorator(func):
+            self.end_func = func
+            return func
+        return decorator 
+    
 
     async def sleep(self,time):
         await asyncio.sleep(time)
@@ -145,36 +213,61 @@ class Server():
     def getLock(self):
         return self.Lock
 
-    
-    def broadcastClient(self,code=str,data={}) -> list:
+
+    def _optimizationClient(self): # 서버에 과부하가 걸렸을때 모두 정리
+        Warn('클라이언트 최적화를 시작합니다..')
+        arr = []
+
+        for k,v in CLIENTS.items():
+            k : str
+            v : ClientObj
+            if v == None:
+                arr.append(k)
+        for i in arr:
+            del CLIENTS[i]
+
+        Warn('최적화완료. 서비스를 계속해서 진행합니다')
+
+
+
+    async def broadcastClient(self,code=str,data={}) -> list:
         arr = []
         for _id,obj in CLIENTS.items():
             obj:ClientObj
             obj.send(code,data)
-            obj._send_()
+            await obj._send_()
             arr.append(_id)
         return arr
 
 
-    def broadcastUser(self,who=dict,code=str,data={}):
+    async def broadcastUser(self,who=list[UserObj],code=str,data={}) -> list[ClientObj]:
         arr = []
-        for _id,uobj in who.items():
-            uobj:UserObj
-            obj = uobj.getConnectClient()
-            obj:ClientObj
-            obj.send(code,data)
-            obj._send_()
-            arr.append(_id)
+        for _uobj in who:
+            try:
+                _uobj:UserObj
+                _obj = _uobj.getConnectClient()
+                _obj:ClientObj
+                _obj.send(code,data)    
+                arr.append(_uobj)
+                await _obj._send_()
+            except Exception as e:
+                if _uobj != None:
+                    await self.error_func(_uobj.getConnectClient(),e)
+                self._optimizationClient()
+                self.error_count += 1
         return arr
+
 
     def roleFilterUser(self,role):
-        return [uobj for uobj in USERS if role in uobj.getRole()]
+        return [uobj for _,uobj in USERS.items() if role in uobj.getRole()]
+
 
     def rightFilterUser(self,right):
-        return [uobj for uobj in USERS if right in uobj.getRight()]
+        return [uobj for _,uobj in USERS.items() if right in uobj.getRight()]
+
 
     def tagFilterUser(self,tag):
-        return [uobj for uobj in USERS if tag in uobj.getTag()]
+        return [uobj for _,uobj in USERS.items() if tag in uobj.getTag()]
 
 
     def open(self,addr):
