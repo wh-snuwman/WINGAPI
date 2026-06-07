@@ -5,18 +5,21 @@ export class wingAPI {
     constructor() {
         this.log = new LogSet()
         this.url = '';
-        this.recvFn = null;
+        this.recvFn = function r(){};
+        this.errorFn = function e(){};
+        this.closeFn = function e(){};
+        this.startFn = function e(){};
         this.isManualClose = false;
         this.isOpen = false;
         this.openPromise = null;
         this.useLog = false;
-
         this.nickname = null;
         this.isLogin = false;
+        // this.nickname = ''
     }
 
-    async connect(domain,port){
-        this.url = `ws://${domain}:${port}`;
+    async connect(addr){
+        this.url = addr;
         
         if (this.isOpen || this.openPromise !== null){
             this.log.Warn('이미 서버에 연결 되었습니다! '+ this.url)
@@ -25,16 +28,16 @@ export class wingAPI {
 
         this.openPromise = new Promise((resolve,reject) => {
             this.websc = new WebSocket(this.url);
-            this.websc.onopen = (e) => {this.isOpen = true;this.open(e);resolve();};
-            this.websc.onerror = (e) => {this.isOpen = false;this.error(e);resolve(e);};
-            this.websc.onclose = () => {this.isOpen = false;this.close();};
+            this.websc.onopen = (e) => {this.isOpen = true;this._openInit(e);this.startFn();resolve();};
+            this.websc.onerror = (e) => {this.isOpen = false;this.errorFn(e);resolve(e);};
+            this.websc.onclose = () => {this.isOpen = false;this.closeFn();this._closeSet()};
             this.websc.onmessage = (e) => this.message(e);
                 
         })
         await this.openPromise
     }
 
-    disconnect(){s
+    disconnect(){
         if (this.websc && this.websc.readyState == WebSocket.OPEN){
             this.log.Info('접속종료 요첨됨..')
             this.isManualClose = true;
@@ -43,24 +46,34 @@ export class wingAPI {
         }
     }
     
-    open(e){
+    _openInit(e){
         this.log.Info(`서버에 연결됨: ${this.url}`)
         this.isOpen = true
     }
 
-    close(){
 
+    start(fn){
+        this.startFn = fn
+    }
+    
+
+    _closeSet(){
+        this.isOpen = false
         if (this.isManualClose){
             this.log.Info('연결종료')
         } else {
             this.log.Error('비정상적으로 연결종료')
         }
-        this.isOpen = false
 
     }
 
-    error(e){
-        this.log.Error('error')
+    close(fn){
+        this.closeFn = fn
+
+    }
+
+    error(fn){
+        this.errorFn = fn
     }
 
     recv(fn){
@@ -80,6 +93,7 @@ export class wingAPI {
         const msgLoads = JSON.parse(recvdata.data)
         const CODE = msgLoads.code
         const DATA = msgLoads.data
+
         if (this.recvFn){
             if (this._isSysMsg(CODE)){
                 const CODE_SYS = this._SysMsgEdit(CODE)
@@ -95,6 +109,8 @@ export class wingAPI {
                 } else if (CODE_SYS == 'login'){
                     if (DATA.login){
                         this.log.Info("로그인완료:" + DATA.nickname)
+                        this.nickname = DATA.nickname
+                        this.isLogin = true
                     } else {
                         this.log.Info("로그인 실패. 계정이 없거나 비밀번호가 틀려렸습니다.")
                     }

@@ -2,7 +2,7 @@ import {wingAPI} from ".././wingAPI/src/script/wingAPI.JS"
 
 (async () => {
     const wing = new wingAPI()
-    await wing.connect('localhost',1270)
+    await wing.connect('localhost',13435)
 
 
     // wing.send('ping',{'msg':'Hello wingAPI!'})
