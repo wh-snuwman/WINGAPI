@@ -159,13 +159,6 @@ class Server():
         Info(f'클라이언트 접속종료 | IP: {CorlStr(address[0],(252,70,140))} | ID: {obj.getId()}')
         self._rmClient(obj.getId())
 
-    # def close(self,id):
-    #     if id in list(CLIENTS.keys()):
-    #         del CLIENTS[id]
-    #     else:
-    #         Error('클라이언트가 없습니다.')
-    #         self.error_count += 1
-
     def newlogin(self):
         def decorator(func):
             self.login_func = func
@@ -214,7 +207,7 @@ class Server():
         return self.Lock
 
 
-    def _optimizationClient(self): # 서버에 과부하가 걸렸을때 모두 정리
+    def optimizationClient(self): # 서버에 과부하가 걸렸을때 모두 정리
         Warn('클라이언트 최적화를 시작합니다..')
         arr = []
 
@@ -295,7 +288,6 @@ class Server():
             asyncio.run(main())
         except KeyboardInterrupt:
             Error("키보드 인터럽트 서버 강제종료")
-
 
 
 Info(f'wingAPI 초기화 완료')

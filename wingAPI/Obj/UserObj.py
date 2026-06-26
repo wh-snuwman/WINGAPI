@@ -13,10 +13,7 @@ class UserObj():
         if self.id == None: self.id = f'USEROBJ{NewId()}'
         self.isLogin = False
         self.isOnline = False
-        self.save = {
-            'inventory':['gun','plank_block','plank_block','plank_block','plank_block','apple','plank_block','plank_block','plank_block','plank_block']
-        }
-        # self.health = 100
+        self.save = {}
 
     def giveRight(self,r) -> None: self.right.append(r)
     def depriveRight(self,r) -> None: self.right.remove(r)
@@ -30,10 +27,6 @@ class UserObj():
     def changeIsLogin(self,state) -> None: self.isLogin = state
     def changeConnectClient(self,clientObj:ClientObj) -> None: self.ClientObj = clientObj
     def saveEdit(self,data:list[any,any]) -> None: self.save[data[0]] = data[1]
-    # def setHealth(self,health:int) -> None: self.health = health
-    # def addHealth(self,health:int) -> None: self.health += health
-    # def subHealth(self,health:int) -> None: self.health -= health
-
     def getSave(self) -> dict: return self.save
     def isDie(self) -> int: return self.health < 0
     def getId(self) -> str:return self.id
@@ -44,8 +37,3 @@ class UserObj():
     def getTag(self) -> list:return self.tag
     def getIsLogin(self) -> bool:return self.isLogin
     def getConnectClient(self) -> ClientObj :return self.ClientObj
-    # def getHealth(self) -> int:return self.health
-
-
-
-
