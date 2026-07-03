@@ -1,4 +1,5 @@
 from .Log import Warn,Info,Error
+import os
 import websockets
 import asyncio
 import json
@@ -18,13 +19,14 @@ class Server():
     def __init__(self):
         self.addr = None
         self.handlers = {}
-        self.core_func = None
         self.error_count = 0 # 에러가 발생한 횟수. 특정 횟수 이상이면 서버 강제 리부팅 
 
         async def temp(obj:ClientObj): 
             Error(traceback.format_exc())
             self.error_count += 1
-
+        
+        async def nonefunc():pass
+        self.core_func = nonefunc
         self.end_func = temp
         self.error_func = None
         self.login_func = None
@@ -78,6 +80,16 @@ class Server():
         return _obj,id
 
     
+    def info(text:str) -> None:
+        Info(text)
+
+    def warn(text:str) -> None:
+        Warn(text)
+    
+    def error(text:str) -> None:
+        Error(text)
+
+
     async def handler(self, websc):
         obj, objId = self._addClient(websc)
         obj: ClientObj
@@ -160,6 +172,7 @@ class Server():
         Info(f'client disconnect | IP: {CorlStr(address[0],(252,70,140))} | ID: {obj.getId()}')
         self._rmClient(obj.getId())
 
+
     def newlogin(self):
         def decorator(func):
             self.login_func = func
@@ -219,7 +232,6 @@ class Server():
         for i in arr:
             del CLIENTS[i]
         Warn('Success client optimization')
-
 
 
     async def broadcastClient(self,code=str,data={}) -> list:
