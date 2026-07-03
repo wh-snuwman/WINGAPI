@@ -1,0 +1,1 @@
+def colors(text:str,rgbT:tuple,rgbB:tuple):return f"\033[38;2;{rgbT[0]};{rgbT[1]};{rgbT[2]};48;2;{rgbB[0]};{rgbB[1]};{rgbB[2]}m{text}\033[0m"

@@ -1,15 +1,14 @@
 from .Log import Warn,Info,Error
-Info(f'모듈로드 시작..')
 import websockets
 import asyncio
 import json
-from .ColorString import ColorString as CorlStr
+from .colorstring import colorString as CorlStr
 from .NewId import NewId
 from .Obj.UserObj import UserObj
 from .Obj.ClientObj import ClientObj
 from .ReservedWord import RESERVED_WORD
-import traceback 
-Info(f'모든 모듈로드 성공!')
+import traceback
+
 
 USERS = {} # 저장된 유저 데이터. 데이터베이스와 주기적으로 동기화됨 
 CLIENTS = {} # 현재 접속해있는 클라이언트 목록
@@ -22,9 +21,10 @@ class Server():
         self.core_func = None
         self.error_count = 0 # 에러가 발생한 횟수. 특정 횟수 이상이면 서버 강제 리부팅 
 
-        async def temp(): 
+        async def temp(obj:ClientObj): 
             Error(traceback.format_exc())
             self.error_count += 1
+
         self.end_func = temp
         self.error_func = None
         self.login_func = None
@@ -59,7 +59,7 @@ class Server():
     def _newUser(self,nick,pw,obj):
         id = f'USER{NewId()}'
         USERS[id] = UserObj(nick,pw,id,obj)
-        Info(f'새로운 유저: {CorlStr('NEW!',(241, 222, 50))} {CorlStr(nick,(54, 155, 255))}')
+        Info(f'New user: {CorlStr('NEW!',(241, 222, 50))} {CorlStr(nick,(54, 155, 255))}')
         return id
 
 
@@ -67,7 +67,7 @@ class Server():
         if id in list(CLIENTS.keys()):
             del CLIENTS[id]
         else:
-            Error('클라이언트가 없습니다.')
+            Error('no client')
             self.error_count += 1
 
 
@@ -83,7 +83,7 @@ class Server():
         obj: ClientObj
         uobj: UserObj = None
         address = obj.addressGet()
-        Info(f'클라이언트 접속 | IP: {CorlStr(address[0],(252,70,140))} | ID: {obj.getId()}')
+        Info(f'Client Connect | IP: {CorlStr(address[0],(252,70,140))} | ID: {obj.getId()}')
         
         try:
             async for data in websc:  
@@ -118,7 +118,7 @@ class Server():
                             if uobj.getPassword() != PASSWORD:
                                 obj.send(code='wing:login', data={'state':'passwordWorng','login':False})
                             else:
-                                Info(f'유저 로그인: {CorlStr(NICKNAME,((54, 155, 255)))}')
+                                Info(f'User login: {CorlStr(NICKNAME,((54, 155, 255)))}')
 
                                 uobj.changeIsLogin(True)
                                 await self.login_func(obj,self.getUser('nick',NICKNAME))
@@ -139,16 +139,17 @@ class Server():
             await self.end_func(obj)
 
         except Exception as e:
-            Info(f"클라이언트 연결이 비정상적으로 끊어졌습니다. ID: {obj.getId()}")
+            Info(f"Client connection is abnormally disconnected | ID: {obj.getId()}")
             await self.error_func(obj,e)
-            self._optimizationClient()
+            print(traceback.format_exc())
+            self.optimizationClient()
 
 
 
         # finally:
         if uobj and uobj.getIsLogin():
             uobj.changeIsLogin(False)
-            Info(f'유저가 로그아웃했습니다. 닉네임: {uobj.nickname}')
+            Info(f'User Logout: {uobj.nickname}')
             uobj.changeConnectClient(None)
             uobj.ClientObj = None
             uobj.isLogin = False
@@ -156,7 +157,7 @@ class Server():
             uobj.tag = []
 
 
-        Info(f'클라이언트 접속종료 | IP: {CorlStr(address[0],(252,70,140))} | ID: {obj.getId()}')
+        Info(f'client disconnect | IP: {CorlStr(address[0],(252,70,140))} | ID: {obj.getId()}')
         self._rmClient(obj.getId())
 
     def newlogin(self):
@@ -208,9 +209,8 @@ class Server():
 
 
     def optimizationClient(self): # 서버에 과부하가 걸렸을때 모두 정리
-        Warn('클라이언트 최적화를 시작합니다..')
+        Warn('Start client optimization')
         arr = []
-
         for k,v in CLIENTS.items():
             k : str
             v : ClientObj
@@ -218,8 +218,7 @@ class Server():
                 arr.append(k)
         for i in arr:
             del CLIENTS[i]
-
-        Warn('최적화완료. 서비스를 계속해서 진행합니다')
+        Warn('Success client optimization')
 
 
 
@@ -246,7 +245,7 @@ class Server():
             except Exception as e:
                 if _uobj != None:
                     await self.error_func(_uobj.getConnectClient(),e)
-                self._optimizationClient()
+                self.optimizationClient()
                 self.error_count += 1
         return arr
 
@@ -287,7 +286,7 @@ class Server():
         try:
             asyncio.run(main())
         except KeyboardInterrupt:
-            Error("키보드 인터럽트 서버 강제종료")
+            Error("Hardware interrupt server shutdown")
 
 
-Info(f'wingAPI 초기화 완료')
+Info(f'Success Initialization wingAPI')
