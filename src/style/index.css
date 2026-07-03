@@ -1,0 +1,17 @@
+body{
+    background-color: rgb(55, 55, 55);    
+}
+#title{
+    font-size: 100px;
+    color: white;
+    position: absolute;
+    left: 50%;
+    top: 55%;
+    transform: translate(-50%,-50%);
+}
+#wing{
+    position: absolute;
+    left: 50%;
+    top: 45%;
+    transform: translate(-50%,-50%);
+}
